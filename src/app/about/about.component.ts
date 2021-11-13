@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { noop, Observable} from 'rxjs';
+import { noop } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { createHttpObservable } from '../common/util';
 
 @Component({
   selector: 'about',
@@ -11,28 +13,16 @@ export class AboutComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
-    const http$ = new Observable(
-      observer => {
-        // Getting courses through a promise
-        fetch('/api/courses')
-          .then(response => {
-            return response.json();
-          })
-          .then(body => {
-            observer.next(body);
-            observer.complete();
-          })
-          .catch(err => {
-            observer.error(err);
-          })
-      }
+    const http$ = createHttpObservable('/api/courses');
+
+    const courses$ = http$.pipe(
+      map(res => Object.values(res["payload"]))
     );
 
-    http$.subscribe(
+    courses$.subscribe(
       courses => console.log(courses),
       noop, // No operation. Replaces the empty callback () => {}
       () => console.log('completed')
     );
   }
-
 }
