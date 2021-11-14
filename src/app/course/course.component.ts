@@ -50,8 +50,12 @@ export class CourseComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit() {
-
-
+        fromEvent(this.input.nativeElement, 'keyup')
+            .pipe(
+                map(event => (<HTMLInputElement>(<Event>event).target).value),
+                debounceTime(400) // Value provided in milliseconds
+            )
+            .subscribe(console.log)
 
 
     }
