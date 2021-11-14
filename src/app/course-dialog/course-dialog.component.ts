@@ -43,7 +43,8 @@ export class CourseDialogComponent implements OnInit, AfterViewInit {
             .pipe(
                 filter(() => this.form.valid),
                 // We want to guarantee the values are saved in the same order as they are emmitted
-                // Our safe operations are happening in sequence in the same order we want to implement them
+                // Our safe operations are happening in sequence in the same order we want to trigger them
+                // Completing one first and then the other
                 concatMap(changes => this.saveCourse(changes))
             )
             .subscribe()
@@ -60,7 +61,12 @@ export class CourseDialogComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit() {
-
+        fromEvent(this.saveButton.nativeElement, 'click')
+        .pipe(
+            // The new values will be ignored as long as the ongoing observable is not completed
+            // We want to manage one click, trigger the save request, and while the safe request is not completed the rest of the clicks will be ignored
+            exhaustMap(() => this.saveCourse(this.form.value))
+        ).subscribe();
 
     }
 
