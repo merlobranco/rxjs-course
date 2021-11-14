@@ -12,8 +12,8 @@ import { createHttpObservable } from '../common/util';
 })
 export class HomeComponent implements OnInit {
 
-    beginnerCourses: Course[];
-    advancedCourses: Course[];
+    beginnerCourses$: Observable<Course[]>;
+    advancedCourses$: Observable<Course[]>;
 
     constructor() {
     }
@@ -24,16 +24,13 @@ export class HomeComponent implements OnInit {
         const courses$ = http$.pipe(
           map(res => Object.values<Course>(res["payload"]))
         );
-    
-        courses$.subscribe(
-          courses => {
-              this.beginnerCourses = courses.filter(course => course.category == 'BEGINNER');
-              this.advancedCourses = courses.filter(course => course.category == 'ADVANCED');
-          },
-          noop, // No operation. Replaces the empty callback () => {}
-          () => console.log('completed')
-        );
 
+        this.beginnerCourses$ = courses$.pipe (
+            map(courses => courses.filter(course => course.category == 'BEGINNER'))
+        );
+        this.advancedCourses$ = courses$.pipe (
+            map(courses => courses.filter(course => course.category == 'ADVANCED'))
+        );
     }
 
 }
