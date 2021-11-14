@@ -53,7 +53,8 @@ export class CourseComponent implements OnInit, AfterViewInit {
         fromEvent(this.input.nativeElement, 'keyup')
             .pipe(
                 map(event => (<HTMLInputElement>(<Event>event).target).value),
-                debounceTime(400) // Value provided in milliseconds
+                debounceTime(400), // Value provided in milliseconds
+                distinctUntilChanged()
             )
             .subscribe(console.log)
 
