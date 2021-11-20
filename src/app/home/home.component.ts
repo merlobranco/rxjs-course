@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Course } from "../model/course";
-import { interval, noop, Observable, of, timer } from 'rxjs';
-import { catchError, delayWhen, map, retryWhen, shareReplay, tap } from 'rxjs/operators';
+import { interval, noop, Observable, of, throwError, timer } from 'rxjs';
+import { catchError, delayWhen, finalize, map, retryWhen, shareReplay, tap } from 'rxjs/operators';
 import { createHttpObservable } from '../common/util';
 
 
@@ -22,27 +22,42 @@ export class HomeComponent implements OnInit {
         const http$ = createHttpObservable('/api/courses');
 
         const courses$: Observable<Course[]> = http$.pipe(
-          tap(() => console.log("HTTP Request executed")),
-          map(res => Object.values<Course>(res["payload"])),
-          shareReplay(),
-          // Here we could provide any observable like fetch data from the db when the network is down
-          catchError(err => of([
-            {
-                id: 0,
-                description: "RxJs In Practice Course",
-                iconUrl: 'https://s3-us-west-1.amazonaws.com/angular-university/course-images/rxjs-in-practice-course.png',
-                courseListIcon: 'https://angular-academy.s3.amazonaws.com/main-logo/main-page-logo-small-hat.png',
-                longDescription: "Understand the RxJs Observable pattern, learn the RxJs Operators via practical examples",
-                category: 'BEGINNER',
-                lessonsCount: 10
-            }
-          ]))
+            // Here we could provide any observable like fetch data from the db when the network is down
+            /* 
+              Maybe after getting the response of our request, or receiving an error,
+                  We would like to fulfil one of the following cleaning operations:
+                      1) Close a netwrok connection
+                      2) Release a memory resource
+                      3) Or send another common clean up operation
+              For that purpose we will use the finalize operation
+
+              Also we could apply different errors in the different position of the pipe chain
+              Maybe some of them we want to be recovered and another ones no
+            */
+            catchError(err => {
+                console.log("Error ocurred", err);
+                // Since catchError needs an observable to be thrown 
+                // will create an observable that errors out immediatly with this error without emitting any value
+                return throwError(err);
+            }),
+            finalize(() => {
+                console.log('Finalized executed...')
+            }),
+            tap(() => console.log("HTTP Request executed")),
+            map(res => Object.values<Course>(res["payload"])),
+            shareReplay()
+            /*
+                If We place the error handling and the finalize after the shareReplay
+                They will be triggered twice since we have 2 subscriptions: 
+                    1) one for beginner courses 
+                    2) and another one for advanced courses
+            */
         );
 
-        this.beginnerCourses$ = courses$.pipe (
+        this.beginnerCourses$ = courses$.pipe(
             map(courses => courses.filter(course => course.category == 'BEGINNER'))
         );
-        this.advancedCourses$ = courses$.pipe (
+        this.advancedCourses$ = courses$.pipe(
             map(courses => courses.filter(course => course.category == 'ADVANCED'))
         );
     }
