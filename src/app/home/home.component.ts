@@ -22,36 +22,19 @@ export class HomeComponent implements OnInit {
         const http$ = createHttpObservable('/api/courses');
 
         const courses$: Observable<Course[]> = http$.pipe(
-            // Here we could provide any observable like fetch data from the db when the network is down
-            /* 
-              Maybe after getting the response of our request, or receiving an error,
-                  We would like to fulfil one of the following cleaning operations:
-                      1) Close a netwrok connection
-                      2) Release a memory resource
-                      3) Or send another common clean up operation
-              For that purpose we will use the finalize operation
-
-              Also we could apply different errors in the different position of the pipe chain
-              Maybe some of them we want to be recovered and another ones no
-            */
-            catchError(err => {
-                console.log("Error ocurred", err);
-                // Since catchError needs an observable to be thrown 
-                // will create an observable that errors out immediatly with this error without emitting any value
-                return throwError(err);
-            }),
-            finalize(() => {
-                console.log('Finalized executed...')
-            }),
             tap(() => console.log("HTTP Request executed")),
             map(res => Object.values<Course>(res["payload"])),
-            shareReplay()
-            /*
-                If We place the error handling and the finalize after the shareReplay
-                They will be triggered twice since we have 2 subscriptions: 
-                    1) one for beginner courses 
-                    2) and another one for advanced courses
-            */
+            shareReplay(),
+            // After the time elapse, then retryWhen will subscribe to the http$ observable
+            // and trigger a new http request
+            retryWhen(errors => errors.pipe(
+                /* 
+                    We should use delayWhen NOT delay 
+                    If we use delay, we will delay the whole error stream by a total of 2 seconds
+                    We want after each error to wait fot 2 seconds
+                */
+                delayWhen(() => timer(2000))
+            ))
         );
 
         this.beginnerCourses$ = courses$.pipe(
