@@ -8,7 +8,8 @@ import {
     map,
     switchMap,
     first,
-    take
+    take,
+    withLatestFrom
 } from 'rxjs/operators';
 import {fromEvent, Observable, concat, forkJoin} from 'rxjs';
 import {Lesson} from '../model/lesson';
@@ -44,8 +45,13 @@ export class CourseComponent implements OnInit, AfterViewInit {
         )
         const lessons$ = this.loadLessons();
 
-        forkJoin(this.course$, lessons$)
-            .subscribe(console.log)
+        lessons$.pipe(
+            withLatestFrom(this.course$)
+        )
+        .subscribe(([lessons, course]) => {
+            console.log("lessons", lessons);
+            console.log("course", course);
+        })
     }
 
     ngAfterViewInit() {
