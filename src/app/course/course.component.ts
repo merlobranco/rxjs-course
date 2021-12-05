@@ -6,7 +6,9 @@ import {
     startWith,
     tap,
     map,
-    switchMap
+    switchMap,
+    first,
+    take
 } from 'rxjs/operators';
 import {fromEvent, Observable, concat, forkJoin} from 'rxjs';
 import {Lesson} from '../model/lesson';
@@ -34,17 +36,16 @@ export class CourseComponent implements OnInit, AfterViewInit {
     ngOnInit() {
         this.courseId = this.route.snapshot.params['id'];
         // We want to send this http request at the same time to the backend in parallel and wait for the results of both of them
-        this.course$ = this.store.selectCourseById(this.courseId);
+        // By the default course$ observable is not completed so forkJoin won't be triggered, because it waits for all the observables to be completed
+        // So we could force the course$ completion by using first or take rxjs operators
+        this.course$ = this.store.selectCourseById(this.courseId).pipe(
+            // first()
+            take(1)
+        )
         const lessons$ = this.loadLessons();
 
         forkJoin(this.course$, lessons$)
-            .pipe(
-                tap(([course, lessons]) => {
-                    console.log('course', course);
-                    console.log('lessons', lessons)
-                })
-            )
-            .subscribe()
+            .subscribe(console.log)
     }
 
     ngAfterViewInit() {

@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, Observable, timer } from "rxjs";
 import { fromPromise } from "rxjs/internal-compatibility";
-import { tap, map } from "rxjs/operators";
+import { tap, map, filter } from "rxjs/operators";
 import { Course } from "../model/course";
 import { createHttpObservable } from "./util";
 
@@ -36,7 +36,8 @@ export class Store {
 
     selectCourseById(courseId: number): Observable<Course> {
         return this.courses$.pipe(
-            map(courses => courses.find(course => course.id == courseId))
+            map(courses => courses.find(course => course.id == courseId)),
+            filter(course => !!course)
         );
     }
 
