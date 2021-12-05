@@ -10,28 +10,34 @@ import { createHttpObservable } from "./util";
     providedIn: 'root'
 })
 export class Store {
-
+    
     private subject = new BehaviorSubject<Course[]>([]);
     courses$: Observable<Course[]> = this.subject.asObservable();
-
+    
     init() {
         const http$ = createHttpObservable('/api/courses');
-
+        
         http$.pipe(
             tap(() => console.log("HTTP Request executed")),
             map(res => Object.values<Course>(res["payload"]))
-        )
-        .subscribe(
+            )
+            .subscribe(
             courses => this.subject.next(courses)
         );
     }
-
+    
     selectBeginnerCourses(): Observable<Course[]> {
         return this.filterByCategory('BEGINNER');
     }
-
+    
     selectAdvancedCourses(): Observable<Course[]> {
         return this.filterByCategory('ADVANCED');
+    }
+
+    selectCourseById(courseId: number): Observable<Course> {
+        return this.courses$.pipe(
+            map(courses => courses.find(course => course.id == courseId))
+        );
     }
 
     filterByCategory(category: string): Observable<Course[]> {
@@ -39,13 +45,13 @@ export class Store {
             map(courses => courses.filter(course => course.category == category))
         );
     }
-
+    
     saveCourse(courseId: number, changes): Observable<any> {
         const courses = this.subject.getValue();
         const courseIndex = courses.findIndex(course => course.id == courseId);
-
+        
         const newCourses = courses.slice(0);
-
+        
         // Using js spread operator
         newCourses[courseIndex] = {
             ...courses[courseIndex],
@@ -56,7 +62,7 @@ export class Store {
         // The subscribers won't be notified
         // The in memory dat should be immutable, we should create a copy of it and notified the subscribers with all the changes
         this.subject.next(newCourses);
-
+        
         return fromPromise(fetch(`/api/courses/${courseId}`, {
             method: 'PUT',
             body: JSON.stringify(changes),
@@ -65,4 +71,6 @@ export class Store {
             }
         }));
     }
+
+    
 }
