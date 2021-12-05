@@ -1,7 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { concat, interval, merge, of } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { createHttpObservable } from '../common/util';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'about',
@@ -13,9 +11,15 @@ export class AboutComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
-    const http$ = createHttpObservable('/api/courses');
-    const sub = http$.subscribe(console.log);
+    const subject = new Subject();
+    const series$ = subject.asObservable();
+    series$.subscribe(console.log);
 
-    setTimeout(() => sub.unsubscribe(), 0);
+    subject.next(1);
+    subject.next(2);
+    subject.next(3);
+    subject.complete();
+
+
   }
 }
